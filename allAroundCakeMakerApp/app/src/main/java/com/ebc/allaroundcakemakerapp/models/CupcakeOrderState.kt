@@ -1,6 +1,7 @@
 package com.ebc.allaroundcakemakerapp.models
 
 data class CupcakeOrderState(
+   val telefono: String = "",
     val flavor: String = "",
     val quantity: Int = 0,
     val price: Double = 15.0,

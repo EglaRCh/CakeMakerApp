@@ -166,14 +166,14 @@ fun MainOnBoarding(navController: NavController, appBoardingDataStore: AppBoardi
                             appBoardingDataStore.saveBoarding(false)
                         }
                         //navController.navigate("Home") {
-                        navController.navigate(CakeMakerAppScreenViews.Start.name) {
+                        navController.navigate(CakeMakerAppScreenViews.Registration.name) {
                             popUpTo(0)
                         }
                     }) {
                         //on mouse over, change the text color to red
 
 
-                        Text(text = "Entrar", modifier = Modifier
+                        Text(text = "Registrarse", modifier = Modifier
                             .align(Alignment.CenterVertically)
                             .align(Alignment.CenterVertically),
                         )

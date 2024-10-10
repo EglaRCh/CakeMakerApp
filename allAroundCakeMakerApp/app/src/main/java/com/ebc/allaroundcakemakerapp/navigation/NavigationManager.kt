@@ -28,6 +28,7 @@ import com.ebc.allaroundcakemakerapp.enums.CakeMakerAppScreenViews
 import com.ebc.allaroundcakemakerapp.viewModels.CakeMakerViewModel
 import com.ebc.allaroundcakemakerapp.views.cupcakewizard.FinishScreen
 import com.ebc.allaroundcakemakerapp.views.cupcakewizard.OrderSummaryScreen
+import com.ebc.allaroundcakemakerapp.views.cupcakewizard.RegistrationScreen
 import com.ebc.allaroundcakemakerapp.views.cupcakewizard.SelectDateScreen
 import com.ebc.allaroundcakemakerapp.views.cupcakewizard.SelectOptionScreen
 import com.ebc.allaroundcakemakerapp.views.cupcakewizard.StartOrderScreen
@@ -100,8 +101,18 @@ fun NavManager(cakeMakerViewModel: CakeMakerViewModel) {
                 MainOnBoarding(navController = navController, appBoardingDataStore = dataStore)
             }
             composable(CakeMakerAppScreenViews.Home.name) {
-                //HomeView(navController = navController, cakeMakerViewModel = cakeMakerViewModel)
-                Text(text = "Home View")
+                val userState by cakeMakerViewModel.registrationState.collectAsState()
+
+
+                if (!userState.isSuccess) {
+                    // Navegar a la pantalla de registro si no está registrado
+                    navController.navigate(CakeMakerAppScreenViews.Registration.name) {
+                        popUpTo(CakeMakerAppScreenViews.Home.name) { inclusive = true }
+                    }
+                } else {
+                    // Mostrar la vista de Home si está registrado
+                    StartOrderScreen(navController = navController, cakeMakerViewModel = cakeMakerViewModel)
+                }
             }
             composable(CakeMakerAppScreenViews.Splash.name) {
                 SplashScreen(navController = navController, store = store.value)
@@ -117,6 +128,10 @@ fun NavManager(cakeMakerViewModel: CakeMakerViewModel) {
                     navController = navController,
                     cakeMakerViewModel = cakeMakerViewModel
                 )
+            }
+            composable(CakeMakerAppScreenViews.Registration.name) {
+                RegistrationScreen(navController = navController,
+                    cakeMakerViewModel = cakeMakerViewModel)
             }
             composable(CakeMakerAppScreenViews.Pickup.name) {
                 SelectDateScreen(

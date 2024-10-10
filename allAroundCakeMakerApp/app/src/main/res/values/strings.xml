@@ -3,6 +3,7 @@
     <string name="back_button">Back</string>
 
     <string name="OnBoarding">OnBoarding</string>
+    <string name="Registration">Registro de Usuario</string>
     <string name="Home">Home</string>
     <string name="Splash">Splash</string>
     <string name="app_name">Cupcake Maker</string>

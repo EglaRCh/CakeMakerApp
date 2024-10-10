@@ -1,37 +1,37 @@
 package com.ebc.allaroundcakemakerapp.views.cupcakewizard
 
+import android.app.NotificationManager
 import android.content.Context
+
 import android.content.Intent
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Divider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+
 import androidx.navigation.NavController
 import com.ebc.allaroundcakemakerapp.R
 import com.ebc.allaroundcakemakerapp.enums.CakeMakerAppScreenViews
+import com.ebc.allaroundcakemakerapp.models.SummaryOrder
 import com.ebc.allaroundcakemakerapp.viewModels.CakeMakerViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+
 
 @Composable
 fun OrderSummaryScreen(navController: NavController, cakeMakerViewModel: CakeMakerViewModel) {
     val context = LocalContext.current
     val resources = context.resources
+
+    // Obtener el estado del resumen del pedido
+    val summaryOrderState by cakeMakerViewModel.summaryOrderState.collectAsState()
 
     val numberOfCupcakes = resources.getQuantityString(
         R.plurals.cupcakes,
@@ -51,11 +51,8 @@ fun OrderSummaryScreen(navController: NavController, cakeMakerViewModel: CakeMak
     val newOrder = stringResource(R.string.new_cupcake_order)
 
     val items = listOf(
-        // Summary line 1: display selected quantity
         Pair(stringResource(R.string.quantity), numberOfCupcakes),
-        // Summary line 2: display selected flavor
         Pair(stringResource(R.string.flavor), cakeMakerViewModel.state.flavor),
-        // Summary line 3: display selected pickup date
         Pair(stringResource(R.string.pickup_date), cakeMakerViewModel.state.pickupDate),
         Pair(stringResource(R.string.extra_instructions), cakeMakerViewModel.state.extraInstructions),
         Pair(stringResource(R.string.pickup_instructions), cakeMakerViewModel.state.pickupInstructions)
@@ -96,9 +93,20 @@ fun OrderSummaryScreen(navController: NavController, cakeMakerViewModel: CakeMak
                 Button(
                     modifier = Modifier.fillMaxWidth(),
                     onClick = {
-                        //cakeMakerViewModel.reset()
-                        //navController.popBackStack(CakeMakerAppScreenViews.Start.name, inclusive = false)
-                        navController.navigate(CakeMakerAppScreenViews.Finish.name)
+                        sendNotification(context, "¡Tu pedido ha sido finalizado!", "Detalles: $orderSummary")
+                        // Guardar el resumen del pedido en la base de datos
+                        CoroutineScope(Dispatchers.Main).launch {
+                            cakeMakerViewModel.saveSummaryOrder(context, SummaryOrder(
+                                telefono = cakeMakerViewModel.state.telefono,
+                                cantidad = cakeMakerViewModel.state.quantity,
+                                sabor = cakeMakerViewModel.state.flavor,
+                                fechaPickup = cakeMakerViewModel.state.pickupDate,
+                                instruccionesExtra = cakeMakerViewModel.state.extraInstructions,
+                                instruccionesPickup = cakeMakerViewModel.state.pickupInstructions,
+                                total = cakeMakerViewModel.state.total
+                            ))
+
+                        }
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF4CAF50)
@@ -106,13 +114,30 @@ fun OrderSummaryScreen(navController: NavController, cakeMakerViewModel: CakeMak
                 ) {
                     Text(stringResource(R.string.end))
                 }
+
+            }
+        }
+
+        // Si el pedido se guarda exitosamente, navegar a la pantalla Finish
+        if (summaryOrderState.isSuccess) {
+            LaunchedEffect(Unit) {
+                navController.navigate(CakeMakerAppScreenViews.Finish.name) {
+                    popUpTo(CakeMakerAppScreenViews.OrderSummary.name) { inclusive = true }
+                }
+            }
+        }
+
+        // Mostrar errores si existen
+        summaryOrderState.error?.let { errorMessage ->
+            LaunchedEffect(errorMessage) {
+                // Mostrar un mensaje de error (podrías agregar un snackbar u otro mecanismo de alerta)
+                println("Error: $errorMessage")
             }
         }
     }
 }
 
 private fun shareOrder(context: Context, subject: String, summary: String) {
-
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
         putExtra(Intent.EXTRA_SUBJECT, subject)
@@ -125,4 +150,18 @@ private fun shareOrder(context: Context, subject: String, summary: String) {
             context.getString(R.string.new_cupcake_order)
         )
     )
+}
+
+private fun sendNotification(context: Context, title: String, message: String) {
+    val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+    val notificationId = 1 // ID único para la notificación
+
+    val notificationBuilder = android.app.Notification.Builder(context, "default_channel")
+        .setContentTitle(title)
+        .setContentText(message)
+        .setSmallIcon(android.R.drawable.ic_dialog_info) // Ícono por defecto
+        .setAutoCancel(true)
+
+    notificationManager.notify(notificationId, notificationBuilder.build())
 }
